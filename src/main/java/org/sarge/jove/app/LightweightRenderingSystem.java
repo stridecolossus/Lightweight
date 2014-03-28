@@ -162,6 +162,7 @@ public final class LightweightRenderingSystem implements RenderingSystem {
 		else {
 		    glEnable( GL_DEPTH_TEST );
 		    glDepthFunc( mapDepthTestString( test.getFunction() ) );
+//		    glDepthRange( zNear, zFar )
 		}
 	}
 

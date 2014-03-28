@@ -22,12 +22,14 @@ public class LightweightViewport implements Viewport {
 
 	@Override
 	public void clear( Colour col ) {
-		glClearColor( col.getRed(), col.getGreen(), col.getBlue(), col.getAlpha() );
-		glClear( GL_COLOR_BUFFER_BIT );
-	}
+		// Clear frame buffer
+		if( col != null ) {
+			glClearColor( col.getRed(), col.getGreen(), col.getBlue(), col.getAlpha() );
+			glClear( GL_COLOR_BUFFER_BIT );
+		}
 
-	@Override
-	public void clear() {
+		// Clear depth buffer
+		// TODO - others
 		glClear( GL_DEPTH_BUFFER_BIT );
 	}
 
