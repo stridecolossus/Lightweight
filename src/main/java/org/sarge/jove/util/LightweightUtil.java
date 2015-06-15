@@ -40,6 +40,11 @@ public final class LightweightUtil {
 	 */
 	public static void checkError() {
 		final String err = getError();
-		if( err != null ) throw new RuntimeException( "OpenGL error: " + err );
+		// TODO
+		//if( err != null ) throw new RuntimeException( "OpenGL error: " + err );
+		if(err != null){
+			new RuntimeException(err).printStackTrace();
+			//System.err.println(err);
+		}
 	}
 }

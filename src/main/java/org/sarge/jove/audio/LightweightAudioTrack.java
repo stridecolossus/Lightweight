@@ -20,13 +20,13 @@ public class LightweightAudioTrack extends AbstractGraphicResource implements Au
 
 		// Buffer audio data
 		alBufferData( id, data.getFormat(), BufferFactory.createByteBuffer( data.getData() ), data.getSampleRate() );
-		LightweightAudioService.checkError( "Error initialising audio buffer" );
+		LightweightAudioSystem.checkError( "Error initialising audio buffer" );
 	}
 
 	@Override
 	protected void delete( int id ) {
 		alDeleteBuffers( id );
-		LightweightAudioService.checkError( "Error releasing audio buffer" );
+		LightweightAudioSystem.checkError( "Error releasing audio buffer" );
 	}
 
 	@Override

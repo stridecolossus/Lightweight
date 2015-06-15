@@ -10,7 +10,7 @@ public class LightweightAudioServiceTest {
 
 	@Before
 	public void before() {
-		service = new LightweightAudioService();
+		service = new LightweightAudioSystem();
 	}
 
 	@After

@@ -6,7 +6,7 @@ import java.nio.IntBuffer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.openal.AL10;
 import org.sarge.jove.animation.AbstractPlayer;
-import org.sarge.jove.common.GraphicResource;
+import org.sarge.jove.common.PeerObject;
 import org.sarge.jove.geometry.Point;
 import org.sarge.jove.geometry.Tuple;
 import org.sarge.jove.geometry.Vector;
@@ -15,7 +15,7 @@ import org.sarge.lib.util.ToString;
 /**
  * OpenAL implementation.
  */
-public final class LightweightAudioPlayer extends AbstractPlayer implements AudioPlayer, GraphicResource {
+public final class LightweightAudioPlayer extends AbstractPlayer implements AudioPlayer, PeerObject {
 	private final int id;
 	private final FloatBuffer buffer = BufferUtils.createFloatBuffer( 3 );
 
@@ -25,7 +25,7 @@ public final class LightweightAudioPlayer extends AbstractPlayer implements Audi
 	public LightweightAudioPlayer() {
 		final IntBuffer idBuffer = BufferUtils.createIntBuffer( 1 );
 		AL10.alGenSources( idBuffer );
-		LightweightAudioService.checkError( "Cannot allocate source" );
+		LightweightAudioSystem.checkError( "Cannot allocate source" );
 		this.id = idBuffer.get( 0 );
 	}
 
@@ -37,7 +37,7 @@ public final class LightweightAudioPlayer extends AbstractPlayer implements Audi
 	@Override
 	public void bind( AudioTrack track ) {
 		AL10.alSourcei( id, AL10.AL_BUFFER, track.getResourceID() );
-		LightweightAudioService.checkError( "Error binding source: src=" + this + " track=" + track );
+		LightweightAudioSystem.checkError( "Error binding source: src=" + this + " track=" + track );
 	}
 
 	@Override
@@ -102,7 +102,7 @@ public final class LightweightAudioPlayer extends AbstractPlayer implements Audi
 		final IntBuffer idBuffer = BufferUtils.createIntBuffer( 1 );
 		idBuffer.put( id );
 		AL10.alDeleteSources( idBuffer );
-		LightweightAudioService.checkError( "Cannot release source" );
+		LightweightAudioSystem.checkError( "Cannot release source" );
 	}
 
 	@Override

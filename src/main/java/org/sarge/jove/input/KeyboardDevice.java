@@ -1,98 +1,81 @@
 package org.sarge.jove.input;
 
-import java.awt.Frame;
-import java.awt.event.KeyAdapter;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
-import org.sarge.jove.input.Device;
-import org.sarge.jove.input.EventKey;
-import org.sarge.jove.input.EventType;
-import org.sarge.jove.input.InputEvent;
-import org.sarge.jove.input.InputEventHandler;
 import org.sarge.lib.util.Util;
 
 /**
  * Keyboard device.
  * @author Sarge
  */
-public class KeyboardDevice extends KeyAdapter implements Device {
-	private static final EventType[] TYPES = { EventType.PRESS, EventType.RELEASE };
+public class KeyboardDevice implements Device, KeyEventDispatcher {
+	private final List<InputEvent> queue = new ArrayList<>();
 
-	private final Frame frame;
-
-	private InputEventHandler handler;
-
-	public KeyboardDevice( Frame frame ) {
-		this.frame = frame;
+	public KeyboardDevice() {
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this);
 	}
 
 	@Override
-	public EventType[] getEventTypes() {
-		return TYPES;
+	public Stream<InputEvent> events() {
+		final Stream<InputEvent> stream = new ArrayList<>(queue).stream();
+		queue.clear();
+		return stream;
 	}
-
-	@SuppressWarnings("hiding")
+	
 	@Override
-	public void start( InputEventHandler handler ) {
-		frame.addKeyListener( this );
-		this.handler = handler;
-	}
+	public boolean dispatchKeyEvent(KeyEvent e) {
+		switch(e.getID()) {
+		case KeyEvent.KEY_PRESSED:
+			generate(EventType.PRESS, e);
+			break;
 
-	@Override
-	public void stop() {
-		frame.removeKeyListener( this );
-	}
+		case KeyEvent.KEY_RELEASED:
+			generate(EventType.RELEASE, e);
+			break;
+		}
 
-	@Override
-	public void keyPressed( KeyEvent e ) {
-		generate( EventType.PRESS, e );
-	}
-
-	@Override
-	public void keyReleased( KeyEvent e ) {
-		generate( EventType.RELEASE, e );
+		return true;
 	}
 
 	/**
 	 * Generates an input device for the given key event and delegates to the handler.
 	 */
-	private void generate( EventType type, KeyEvent e ) {
+	private void generate(EventType type, KeyEvent e) {
 		// Get key and modifiers text
 		final int keyCode = e.getKeyCode();
 		final int mods = e.getModifiers();
-		final String keyText = clean( KeyEvent.getKeyText( keyCode ) );
-		final String modsText = clean( KeyEvent.getKeyModifiersText( mods ) );
+		final String keyText = clean(KeyEvent.getKeyText(keyCode));
+		final String modsText = clean(KeyEvent.getKeyModifiersText(mods));
 
 		// Build event name
 		final String name;
-		if( Util.isEmpty( modsText ) ) {
+		if(Util.isEmpty(modsText)) {
 			name = keyText;
 		}
 		else {
 			name = modsText + "+" + keyText;
 		}
 
-		// Re-use event key from pool
-		final EventKey key = EventKey.POOL.get();
-		key.init( type, name );
-
-		// Re-use event from pool
-		final InputEvent event = InputEvent.POOL.get();
-		event.init( this, key );
-
-		// Delegate to handler
-		handler.handle( event );
+		// Queue event
+		final InputEvent event = new InputEvent(this, new EventKey(type, name), null, null);
+		queue.add(event);
 	}
 
 	/**
 	 * Strips white-space.
 	 * Event names are used as keys when being persisted.
 	 */
-	private static String clean( String str ) {
+	private static String clean(String str) {
 		final StringBuilder sb = new StringBuilder();
-		for( char ch : str.toCharArray() ) {
-			if( Character.isWhitespace( ch ) ) continue;
-			sb.append( ch );
+		for(char ch : str.toCharArray()) {
+			if(!Character.isWhitespace(ch)) {
+				sb.append(ch);
+			}
 		}
 		return sb.toString();
 	}

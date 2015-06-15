@@ -12,7 +12,7 @@ public class LightweightShaderTest {
 	private LightweightShader shader;
 
 	@Before
-	public void before() throws ShaderException {
+	public void before() {
 		shader = new LightweightShader( Shader.Type.VERTEX, "void main(void) { gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex; }" );
 	}
 
@@ -23,8 +23,8 @@ public class LightweightShaderTest {
 	}
 
 	@SuppressWarnings("unused")
-	@Test( expected = ShaderException.class )
-	public void invalidCode() throws ShaderException {
+	@Test( expected = RuntimeException.class )
+	public void invalidCode() {
 		new LightweightShader( Shader.Type.VERTEX, "cobblers" );
 	}
 }

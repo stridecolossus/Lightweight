@@ -1,139 +1,157 @@
 package org.sarge.jove.shader;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
-import org.sarge.jove.util.JoveUtils;
+import org.sarge.jove.common.AbstractPeerObject;
+import org.sarge.jove.shader.ShaderProgram.ShaderProgramPeer;
+import org.sarge.jove.util.LightweightUtil;
 
 /**
  * LWJGL implementation.
  */
-public final class LightweightShaderProgram extends AbstractShaderProgram {
-	public LightweightShaderProgram( Shader[] shaders ) {
-		super( shaders );
+public final class LightweightShaderProgram extends AbstractPeerObject implements ShaderProgramPeer {
+	@Override
+	public int allocate() {
+		return GL20.glCreateProgram();
+	}
+	
+	@Override
+	public void check() {
+		LightweightUtil.checkError();
 	}
 
 	@Override
-	protected int allocate() {
-        return GL20.glCreateProgram();
+	public void attach(int shader) {
+		GL20.glAttachShader(id, shader);
+		check();
 	}
 
 	@Override
-	protected void attach( int program, int shader ) {
-		GL20.glAttachShader( program, shader );
+	public void link() {
+		GL20.glLinkProgram(id);
+		verify(GL20.GL_LINK_STATUS); // TODO
+		check();
 	}
-
+	
 	@Override
-	protected void link( int program ) {
-        // Link program
-        GL20.glLinkProgram( program );
-        verify( GL20.GL_LINK_STATUS );
-
-        // Validate program
-        GL20.glValidateProgram( program );
-        verify( GL20.GL_VALIDATE_STATUS );
+	public void validate() {
+		GL20.glValidateProgram(id);
+		verify(GL20.GL_VALIDATE_STATUS); // TODO
+		check();
 	}
 
 	/**
 	 * Verifies the last operation.
 	 */
-	private void verify( int pname ) {
+	private void verify(int pname) {
 		// Verify status
-		final int id = super.getResourceID();
-        final int result = GL20.glGetProgrami( id, pname );
-        if( result == GL11.GL_TRUE ) return;
+		final int result = GL20.glGetProgrami(id, pname);
+		if(result == GL11.GL_TRUE) return;
 
-        // Retrieve log
-    	final String log = GL20.glGetProgramInfoLog( id, 1024 );
-    	throw new RuntimeException( log );
+		// Retrieve log
+		final String log = GL20.glGetProgramInfoLog(id, 1024);
+		throw new RuntimeException(log);
 	}
 
 	@Override
-	protected int getParameterCount() {
-		return GL20.glGetProgrami( getResourceID(), GL20.GL_ACTIVE_UNIFORMS );
-	}
+	public ParameterDescriptor[] getParameters() {
+		// Create array
+		final int num = GL20.glGetProgrami(id, GL20.GL_ACTIVE_UNIFORMS);
+check();
+		final ParameterDescriptor[] params = new ParameterDescriptor[num];
 
-	@Override
-	protected ParameterDescriptor getShaderParameterDescriptor( int idx ) {
-		// Retrieve parameter details
-		final int program = super.getResourceID();
-    	final String name = GL20.glGetActiveUniform( program, idx, 128 );
-    	final int len = GL20.glGetActiveUniformSize( program, idx );
-    	final int type = GL20.glGetActiveUniformType( program, idx );
-    	final int loc = GL20.glGetUniformLocation( program, name );
+		// Build parameter descriptors
+		for(int n = 0; n < num; ++n) {
+			// Retrieve parameter details
+			final String name = GL20.glGetActiveUniform(id, n, 128);
+			final int len = GL20.glGetActiveUniformSize(id, n);
+			final int type = GL20.glGetActiveUniformType(id, n);
+			final int loc = GL20.glGetUniformLocation(id, name);
+check();
 
-    	// Map parameter type constant to string
-    	final String typeName;
-		try {
-			typeName = JoveUtils.mapIntegerConstant( GL20.class, type );
+			// Create descriptor
+			params[n] = new ParameterDescriptor(name, len, type, loc);
 		}
-		catch( Exception e ) {
-			throw new RuntimeException( "Cannot lookup type name: " + name, e );
-		}
-    	if( typeName == null ) throw new UnsupportedOperationException( "Unknown parameter type: " + name );
 
-    	// Create descriptor
-    	return new ParameterDescriptor( name, len, typeName, loc );
+		return params;
 	}
 
 	@Override
-	public void setInteger( int loc, IntBuffer buffer ) {
-		GL20.glUniform1( loc, buffer );
+	public void setInteger(ShaderParameter param, int arg) {
+		GL20.glUniform1i(param.getLocation(), arg);
+		check();
 	}
 
 	@Override
-	public void setFloat( int loc, int size, FloatBuffer buffer ) {
-		switch( size ) {
-		case 1:
-			GL20.glUniform1( loc, buffer );
-			break;
+	public void setFloat(ShaderParameter param, float f) {
+		GL20.glUniform1f(param.getLocation(), f);
+		check();
+	}
+	
+	@Override
+	public void setVector(ShaderParameter param) {
+		// TODO
+	}
+	
+	@Override
+	public void setMatrix(ShaderParameter param) {
+		// TODO
+		GL20.glUniformMatrix4(param.getLocation(), false, param.getBuffer());
+		check();
+	}
+	
+//	@Override
+//	public void setFloat(int loc, int size, FloatBuffer buffer) {
+//		switch(size) {
+//		case 1:
+//			GL20.glUniform1(loc, buffer);
+//			break;
+//
+//		case 2:
+//			GL20.glUniform2(loc, buffer);
+//			break;
+//
+//		case 3:
+//			GL20.glUniform3(loc, buffer);
+//			break;
+//
+//		case 4:
+//			GL20.glUniform4(loc, buffer);
+//			break;
+//
+//		default:
+//			throw new RuntimeException();
+//		}
+//	}
+//
+//	@Override
+//	public void setMatrix(int loc, int size, FloatBuffer buffer) {
+//		switch(size) {
+//		case 2:
+//			GL20.glUniformMatrix2(loc, false, buffer);
+//			break;
+//
+//		case 3:
+//			GL20.glUniformMatrix3(loc, false, buffer);
+//			break;
+//
+//		case 4:
+//			GL20.glUniformMatrix4(loc, false, buffer);
+//			break;
+//
+//		default:
+//			throw new RuntimeException();
+//		}
+//	}
 
-		case 2:
-			GL20.glUniform2( loc, buffer );
-			break;
-
-		case 3:
-			GL20.glUniform3( loc, buffer );
-			break;
-
-		case 4:
-			GL20.glUniform4( loc, buffer );
-			break;
-
-		default:
-			throw new RuntimeException();
-		}
+	@Override
+	public void bind(int program) {
+		GL20.glUseProgram(program);
+		check();
 	}
 
 	@Override
-	public void setMatrix( int loc, int size, FloatBuffer buffer ) {
-		switch( size ) {
-		case 2:
-			GL20.glUniformMatrix2( loc, false, buffer );
-			break;
-
-		case 3:
-			GL20.glUniformMatrix3( loc, false, buffer );
-			break;
-
-		case 4:
-			GL20.glUniformMatrix4( loc, false, buffer );
-			break;
-
-		default:
-			throw new RuntimeException();
-		}
-	}
-
-	@Override
-	protected void bind( int program ) {
-        GL20.glUseProgram( program );
-	}
-
-	@Override
-	protected void delete( int id ) {
-        GL20.glDeleteShader( id );
+	public void delete() {
+		GL20.glDeleteShader(super.getID());
 	}
 }
